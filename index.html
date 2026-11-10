@@ -1,199 +1,214 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#312e81">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#7655d9">
 <title>Mis pastillas</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg">
+<link rel="manifest" href="./manifest.webmanifest">
+
 <style>
-* { box-sizing: border-box; }
-
 body {
-  margin: 0;
-  min-height: 100vh;
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #eef2ff;
-  font-family: Arial, sans-serif;
-  color: #1e1b4b;
+    font-family: Arial, sans-serif;
+    background: #f3f0fa;
+    margin: 0;
+    padding: 25px 15px;
+    text-align: center;
+    color: #29243a;
 }
 
-main {
-  width: 100%;
-  max-width: 420px;
-  background: white;
-  padding: 25px;
-  border-radius: 20px;
-  box-shadow: 0 5px 25px #0002;
+h1 { color: #7655d9; }
+
+.contenedor {
+    max-width: 420px;
+    margin: auto;
+    background: white;
+    padding: 22px;
+    border-radius: 18px;
+    box-shadow: 0 4px 15px #0001;
 }
 
-h1 { text-align: center; }
-
-p { color: #64748b; text-align: center; }
-
-.dia {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  padding: 15px;
-  margin: 9px 0;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  background: white;
-  font-size: 17px;
-  cursor: pointer;
+.dias {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 20px 0;
 }
 
-.actual {
-  border: 2px solid #6366f1;
-  background: #eef2ff;
+.dias button {
+    border: 0;
+    padding: 12px 4px;
+    border-radius: 10px;
+    background: #e9e3f7;
+    color: #7655d9;
+    font-weight: bold;
 }
 
-.marcado {
-  background: #dcfce7;
-  color: #166534;
+.dias button.actual {
+    background: #7655d9;
+    color: white;
 }
 
-#estado {
-  margin-top: 20px;
-  padding: 12px;
-  background: #f1f5f9;
-  border-radius: 10px;
+.dias button.completado {
+    background: #b9e8c5;
+    color: #205c32;
 }
 
-#reiniciar {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  background: #4f46e5;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
+.dias button:disabled {
+    opacity: 0.4;
+}
+
+.pastillas {
+    text-align: left;
+    margin-top: 20px;
+}
+
+.pastilla {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 12px;
+    background: #f3f0fa;
+    font-size: 16px;
+}
+
+.pastilla input {
+    width: 22px;
+    height: 22px;
+    accent-color: #7655d9;
+}
+
+#progreso {
+    color: #7655d9;
+    font-weight: bold;
+    margin-top: 20px;
 }
 </style>
 </head>
 
 <body>
 
-<main>
-<h1>💊 Mis pastillas</h1>
-<p>Marca cada día cuando hayas tomado tu pastilla.</p>
+<div class="contenedor">
+    <h1>Mis pastillas</h1>
+    <p>Control semanal</p>
 
-<p id="progreso">0 de 7 días marcados</p>
+    <div class="dias" id="dias"></div>
 
-<div id="dias"></div>
+    <h2 id="tituloDia"></h2>
 
-<p id="estado">Siguiente día: lunes</p>
+    <div class="pastillas" id="pastillas"></div>
 
-<button id="reiniciar">Reiniciar semana</button>
-
-<p style="font-size:12px">
-El progreso se guarda en este móvil.
-</p>
-</main>
+    <p id="progreso"></p>
+    <p id="mensaje"></p>
+</div>
 
 <script>
-const nombres = [
-  "Lunes", "Martes", "Miércoles",
-  "Jueves", "Viernes", "Sábado", "Domingo"
+const nombresDias = [
+    "Lunes", "Martes", "Miércoles", "Jueves",
+    "Viernes", "Sábado", "Domingo"
 ];
 
-const CLAVE = "misPastillas";
+let datos = JSON.parse(localStorage.getItem("misPastillas")) || {
+    actual: 0,
+    dias: Array.from({length: 7}, () => [false, false, false, false])
+};
 
-let datos;
-
-try {
-  datos = JSON.parse(localStorage.getItem(CLAVE)) ||
-    { actual: 0, marcados: [] };
-} catch {
-  datos = { actual: 0, marcados: [] };
+if (!datos.dias) {
+    datos.dias = Array.from({length: 7}, () => [false, false, false, false]);
 }
 
-if (!Number.isInteger(datos.actual) ||
-    datos.actual < 0 || datos.actual > 6) {
-  datos.actual = 0;
-}
-
-if (!Array.isArray(datos.marcados)) {
-  datos.marcados = [];
-}
+let diaSeleccionado = datos.actual;
 
 function guardar() {
-  localStorage.setItem(CLAVE, JSON.stringify(datos));
+    localStorage.setItem("misPastillas", JSON.stringify(datos));
 }
 
 function mostrar() {
-  const contenedor = document.getElementById("dias");
-  contenedor.innerHTML = "";
+    const dias = document.getElementById("dias");
+    const pastillas = document.getElementById("pastillas");
 
-  nombres.forEach((nombre, i) => {
-    const boton = document.createElement("button");
-    const hecho = datos.marcados.includes(i);
+    dias.innerHTML = "";
+    pastillas.innerHTML = "";
 
-    boton.className = "dia";
+    nombresDias.forEach((dia, i) => {
+        const boton = document.createElement("button");
+        boton.textContent = dia.substring(0, 3);
 
-    if (hecho) boton.classList.add("marcado");
-    if (i === datos.actual) boton.classList.add("actual");
+        if (i === diaSeleccionado) boton.classList.add("actual");
 
-    boton.innerHTML = `
-      <span>${nombre}</span>
-      <span>${hecho ? "✓" : "○"}</span>
-    `;
+        if (datos.dias[i].every(Boolean)) {
+            boton.classList.add("completado");
+        }
 
-    boton.onclick = () => marcar(i);
+        boton.disabled = i > datos.actual;
+        boton.onclick = () => {
+            diaSeleccionado = i;
+            mostrar();
+        };
 
-    contenedor.appendChild(boton);
-  });
+        dias.appendChild(boton);
+    });
 
-  document.getElementById("progreso").textContent =
-    datos.marcados.length + " de 7 días marcados";
+    document.getElementById("tituloDia").textContent =
+        nombresDias[diaSeleccionado];
 
-  document.getElementById("estado").textContent =
-    datos.marcados.length === 7
-      ? "¡Semana completada! Vuelve al lunes."
-      : "Siguiente día: " + nombres[datos.actual];
-}
+    datos.dias[diaSeleccionado].forEach((marcada, i) => {
+        const etiqueta = document.createElement("label");
+        etiqueta.className = "pastilla";
 
-function marcar(i) {
-  if (i !== datos.actual) {
-    alert("Ahora toca " + nombres[datos.actual]);
-    return;
-  }
+        const casilla = document.createElement("input");
+        casilla.type = "checkbox";
+        casilla.checked = marcada;
+        casilla.disabled = diaSeleccionado !== datos.actual;
 
-  datos.marcados.push(i);
+        casilla.onchange = () => {
+            datos.dias[diaSeleccionado][i] = casilla.checked;
 
-  if (i === 6) {
-    datos.actual = 0;
-    datos.marcados = [];
-  } else {
-    datos.actual++;
-  }
+            if (datos.dias[datos.actual].every(Boolean)) {
+                if (datos.actual === 6) {
+                    datos.actual = 0;
+                    datos.dias = Array.from(
+                        {length: 7},
+                        () => [false, false, false, false]
+                    );
+                    diaSeleccionado = 0;
+                    document.getElementById("mensaje").textContent =
+                        "¡Semana completada! Empezamos de nuevo.";
+                } else {
+                    datos.actual++;
+                    diaSeleccionado = datos.actual;
+                    document.getElementById("mensaje").textContent =
+                        "¡Día completado!";
+                }
+            } else {
+                document.getElementById("mensaje").textContent = "";
+            }
 
-  guardar();
-  mostrar();
-}
+            guardar();
+            mostrar();
+        };
 
-document.getElementById("reiniciar").onclick = () => {
-  if (confirm("¿Quieres reiniciar la semana?")) {
-    datos = { actual: 0, marcados: [] };
-    guardar();
-    mostrar();
-  }
-};
+        etiqueta.appendChild(casilla);
+        etiqueta.appendChild(
+            document.createTextNode("Pastilla " + (i + 1))
+        );
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js");
-  });
+        pastillas.appendChild(etiqueta);
+    });
+
+    const marcadas = datos.dias[diaSeleccionado].filter(Boolean).length;
+
+    document.getElementById("progreso").textContent =
+        marcadas + " de 4 pastillas marcadas";
 }
 
 mostrar();
+
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js");
+}
 </script>
 
 </body>
