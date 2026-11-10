@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#312e81">
+<title>Mis pastillas</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #eef2ff;
+  font-family: Arial, sans-serif;
+  color: #1e1b4b;
+}
+
+main {
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 5px 25px #0002;
+}
+
+h1 { text-align: center; }
+
+p { color: #64748b; text-align: center; }
+
+.dia {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+  margin: 9px 0;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: white;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.actual {
+  border: 2px solid #6366f1;
+  background: #eef2ff;
+}
+
+.marcado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+#estado {
+  margin-top: 20px;
+  padding: 12px;
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+#reiniciar {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #4f46e5;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<main>
+<h1>💊 Mis pastillas</h1>
+<p>Marca cada día cuando hayas tomado tu pastilla.</p>
+
+<p id="progreso">0 de 7 días marcados</p>
+
+<div id="dias"></div>
+
+<p id="estado">Siguiente día: lunes</p>
+
+<button id="reiniciar">Reiniciar semana</button>
+
+<p style="font-size:12px">
+El progreso se guarda en este móvil.
+</p>
+</main>
+
+<script>
+const nombres = [
+  "Lunes", "Martes", "Miércoles",
+  "Jueves", "Viernes", "Sábado", "Domingo"
+];
+
+const CLAVE = "misPastillas";
+
+let datos;
+
+try {
+  datos = JSON.parse(localStorage.getItem(CLAVE)) ||
+    { actual: 0, marcados: [] };
+} catch {
+  datos = { actual: 0, marcados: [] };
+}
+
+if (!Number.isInteger(datos.actual) ||
+    datos.actual < 0 || datos.actual > 6) {
+  datos.actual = 0;
+}
+
+if (!Array.isArray(datos.marcados)) {
+  datos.marcados = [];
+}
+
+function guardar() {
+  localStorage.setItem(CLAVE, JSON.stringify(datos));
+}
+
+function mostrar() {
+  const contenedor = document.getElementById("dias");
+  contenedor.innerHTML = "";
+
+  nombres.forEach((nombre, i) => {
+    const boton = document.createElement("button");
+    const hecho = datos.marcados.includes(i);
+
+    boton.className = "dia";
+
+    if (hecho) boton.classList.add("marcado");
+    if (i === datos.actual) boton.classList.add("actual");
+
+    boton.innerHTML = `
+      <span>${nombre}</span>
+      <span>${hecho ? "✓" : "○"}</span>
+    `;
+
+    boton.onclick = () => marcar(i);
+
+    contenedor.appendChild(boton);
+  });
+
+  document.getElementById("progreso").textContent =
+    datos.marcados.length + " de 7 días marcados";
+
+  document.getElementById("estado").textContent =
+    datos.marcados.length === 7
+      ? "¡Semana completada! Vuelve al lunes."
+      : "Siguiente día: " + nombres[datos.actual];
+}
+
+function marcar(i) {
+  if (i !== datos.actual) {
+    alert("Ahora toca " + nombres[datos.actual]);
+    return;
+  }
+
+  datos.marcados.push(i);
+
+  if (i === 6) {
+    datos.actual = 0;
+    datos.marcados = [];
+  } else {
+    datos.actual++;
+  }
+
+  guardar();
+  mostrar();
+}
+
+document.getElementById("reiniciar").onclick = () => {
+  if (confirm("¿Quieres reiniciar la semana?")) {
+    datos = { actual: 0, marcados: [] };
+    guardar();
+    mostrar();
+  }
+};
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js");
+  });
+}
+
+mostrar();
+</script>
+
+</body>
+</html>
