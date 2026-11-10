@@ -1,5 +1,5 @@
 
-const CACHE = "pastillas-v1";
+const CACHE = "pastillas-v2";
 
 const ARCHIVOS = [
   "./",
